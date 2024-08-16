@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vehicle Live Camera</title>
+    <link rel="stylesheet" href="../static/css/base.css" />
+  </head>
+  <body>
+    <div class="profile-bar">
+      <div class="content">Vehicle Live Camera</div>
+      <div class="profile-info">
+        <!-- Add profile information here -->
+      </div>
+    </div>
+
+    <div class="content">
+      {% if user.is_authenticated %}
+      <a href="home"></a>
+      {% endif %}
+
+      <div class="video-stream">
+        <img
+          id="video-stream"
+          src=""
+          alt="Video Stream"
+          style="width: 830px; height: 500px; left: 0px; top: 0px"
+        />
+      </div>
+
+      <div class="button-container">
+        <button class="start-camera" onclick="startCamera()">
+          Start Camera
+        </button>
+        <button class="stop-camera" onclick="stopCamera()">Stop Camera</button>
+        <a href="/Records">
+          <button class="view-records">View Records</button>
+        </a>
+      </div>
+
+      <div class="side-box">
+        <table id="myTable">
+          <thead>
+            <tr>
+              <th>SN</th>
+              <th>License Plate No</th>
+              <th>Speed</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Table content will be populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      function startCamera() {
+        document.getElementById("video-stream").src = "/video";
+      }
+
+      function stopCamera() {
+        document.getElementById("video-stream").src = "";
+      }
+    </script>
+    <script src="static/js/records_table.js"></script>
+  </body>
+</html>
