@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  {% load static %}
+  <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+  <title>DOTM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  <div class="sidenav">
+    <div class="logo-container">
+      <img src="static/traffic_logo.png" alt="Logo">
+      <h1>DOTM</h1>
+    </div>
+    <div class="sidenav-content">
+      <a href="/admin/home"><i class="fas fa-home"></i> Home</a>
+      <a href="/admin/chart"><i class="fas fa-chart-line"></i> Trends</a>
+      <a href="/admin/traffics"><i class="fas fa-car"></i> Traffic List</a>
+      <a href="/admin/notice"><i class="fas fa-bell"></i> Notice</a>
+     
+    </div>
+    <div class="sidenav-bottom-section">
+      <p>Contact: <span>01-456789</span></p>
+      <p>Location: <span>Kathmandu,Bagmati</span></p>
+    </div>
+  </div>
+
+
+  <div class="content">
+    {% block body_block %}
+    {% endblock %}
+  </div>
+
+</body>
+</html>
