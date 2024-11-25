@@ -27,12 +27,6 @@ env/
 .env
 
 # Media and Model Files
-media/
-*.mp4
-*.MOV
-*.jpg
-*.jpeg
-*.png
 media/captured_photos/*
 !media/captured_photos/.gitkeep
 media/frames/*
@@ -46,15 +40,6 @@ models/*
 !models/Number_plate_recognize_last.pt
 !models/Vehicle_Detection.pt
 !models/coco.txt
-models/*.pt
-models/*.h5
-models/*.weights
-models/*.onnx
-models/*.engine
-models/*.mlmodel
-models/*.torchscript
-models/*.tflite
-models/*/
 
 # Test Videos and Images
 speed_estimation/Test_video/*
@@ -86,15 +71,3 @@ test_images/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-
-# Libraries and binaries
-*.dylib
-*.so
-*.dll
-*.pyd
-*.lib
-*.a
-
-# Git LFS
-.git/lfs/
-.git/objects/pack/
