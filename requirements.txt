@@ -1,0 +1,9 @@
+django==4.2.0
+opencv-python==4.8.0.74
+numpy==1.24.3
+torch==2.1.0
+torchvision==0.16.0
+ultralytics==8.0.196
+supervision==0.6.0
+pillow==10.0.0
+easyocr==1.7.0
