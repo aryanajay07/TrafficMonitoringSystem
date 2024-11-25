@@ -28,6 +28,16 @@ db.sqlite3
 db.sqlite3-journal
 media/
 
+# Media files
+media/captured_photos/*
+media/frames/*
+media/plate_photos/*
+media/result_videos/*
+!media/captured_photos/.gitkeep
+!media/frames/.gitkeep
+!media/plate_photos/.gitkeep
+!media/result_videos/.gitkeep
+
 # Virtual Environment
 venv/
 ENV/
