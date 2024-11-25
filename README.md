@@ -32,6 +32,15 @@ Benefits
 Increased Road Safety: By identifying speeding vehicles and enforcing penalties, the system helps to ensure that drivers are more cautious, potentially reducing accidents.
 Law Enforcement: With the ability to automatically detect and identify vehicles, law enforcement can monitor high-risk areas and take immediate action.
 Traffic Management: Provides authorities with useful data for analyzing traffic patterns and improving road infrastructure.
+## Model Files
+Due to size constraints, model files are not included in this repository. You'll need to download the following files and place them in the `models/` directory:
+
+1. `Number_plate_recognize_last .pt` - License plate recognition model
+2. `Vehicle_Detection.pt` - Vehicle detection model
+3. `coco.txt` - COCO dataset class names
+
+Please contact the repository maintainer for access to these model files.
+
 Conclusion
 
 This system is designed to improve road safety by leveraging deep learning and computer vision techniques to monitor traffic, identify speeding vehicles, and capture license plate numbers. It can be applied to multiple use cases, including traffic management, law enforcement, and accident prevention.
