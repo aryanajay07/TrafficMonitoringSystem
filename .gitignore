@@ -28,6 +28,13 @@ db.sqlite3
 db.sqlite3-journal
 media/
 
+# Large files and models
+models/*.pt
+models/*.h5
+*.dylib
+*.pack
+*.mp4
+
 # Media files
 media/captured_photos/*
 media/frames/*
@@ -67,20 +74,10 @@ Icon
 .com.apple.timemachine.donotpresent
 
 # Project specific
-*.dylib
-*.weights
-*.pt
-*.onnx
-*.engine
-*.mlmodel
-*.torchscript
-*.tflite
-*.h5
 models/
 runs/
 *.jpg
 *.jpeg
 *.png
-*.mp4
 !static/images/
 !static/icons/
