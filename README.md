@@ -158,17 +158,6 @@ A cutting-edge traffic monitoring solution that combines computer vision and dee
 - [ ] Integration with traffic signal systems
 - [ ] Advanced analytics dashboard
 
-## 🤝 Contributing
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## 📝 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-For support, feature requests, or bug reports:
-- Create an issue on GitHub
-- Contact the maintainer
-- Join our community discussion
 
 ## 🙏 Acknowledgments
 - YOLOv8 team for object detection
