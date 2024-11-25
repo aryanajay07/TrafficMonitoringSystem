@@ -4,66 +4,40 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+venv/
+ENV/
 
 # Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
 
-# Large files and models
+# Media and large files
+media/
+*.mp4
+*.MOV
+*.jpg
+*.jpeg
+*.png
+!static/images/**
+!static/icons/**
+
+# Model files
 models/*.pt
 models/*.h5
-*.dylib
-*.pack
-*.mp4
-
-# Media files
-media/captured_photos/*
-media/frames/*
-media/plate_photos/*
-media/result_videos/*
-!media/captured_photos/.gitkeep
-!media/frames/.gitkeep
-!media/plate_photos/.gitkeep
-!media/result_videos/.gitkeep
-
-# Virtual Environment
-venv/
-ENV/
-env/
-.env
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-.project
-.pydevproject
+models/*.weights
+models/*.onnx
+models/*.engine
+models/*.mlmodel
+models/*.torchscript
+models/*.tflite
+models/*/
 
 # macOS
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon
 ._*
 .DocumentRevisions-V100
 .fseventsd
@@ -73,11 +47,32 @@ Icon
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
-# Project specific
-models/
-runs/
-*.jpg
-*.jpeg
-*.png
-!static/images/
-!static/icons/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git LFS
+.git/lfs/
+.git/objects/pack/
+
+# Libraries and binaries
+*.dylib
+*.so
+*.dll
+*.pyd
+*.lib
+*.a
+
+# Test videos and images
+speed_estimation/Test_video/
+test_videos/
+test_images/
+
+# Keep these files
+!media/captured_photos/.gitkeep
+!media/frames/.gitkeep
+!media/plate_photos/.gitkeep
+!media/result_videos/.gitkeep
+!models/.gitkeep
