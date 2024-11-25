@@ -4,26 +4,48 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
 venv/
 ENV/
+env/
+.env
 
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Media and large files
+# Media and Model Files
 media/
 *.mp4
 *.MOV
 *.jpg
 *.jpeg
 *.png
-!static/images/**
-!static/icons/**
-
-# Model files
+media/captured_photos/*
+!media/captured_photos/.gitkeep
+media/frames/*
+!media/frames/.gitkeep
+media/plate_photos/*
+!media/plate_photos/.gitkeep
+media/result_videos/*
+!media/result_videos/.gitkeep
+models/*
+!models/.gitkeep
+!models/Number_plate_recognize_last.pt
+!models/Vehicle_Detection.pt
+!models/coco.txt
 models/*.pt
 models/*.h5
 models/*.weights
@@ -34,7 +56,19 @@ models/*.torchscript
 models/*.tflite
 models/*/
 
-# macOS
+# Test Videos and Images
+speed_estimation/Test_video/*
+!speed_estimation/Test_video/.gitkeep
+test_videos/
+test_images/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -47,15 +81,11 @@ models/*/
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Git LFS
-.git/lfs/
-.git/objects/pack/
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
 # Libraries and binaries
 *.dylib
@@ -65,14 +95,6 @@ models/*/
 *.lib
 *.a
 
-# Test videos and images
-speed_estimation/Test_video/
-test_videos/
-test_images/
-
-# Keep these files
-!media/captured_photos/.gitkeep
-!media/frames/.gitkeep
-!media/plate_photos/.gitkeep
-!media/result_videos/.gitkeep
-!models/.gitkeep
+# Git LFS
+.git/lfs/
+.git/objects/pack/
