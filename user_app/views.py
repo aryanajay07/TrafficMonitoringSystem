@@ -1,63 +1,66 @@
-# from speed_estimation.vehicle_speed_count import process_video
 from speed_estimation.combinedmine import process_video
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, StreamingHttpResponse
 from .models import Record
 import csv
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login
-import re,uuid
+import re, uuid
 from rest_framework.response import Response
-#view for welcome page and mac-address authorization
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+@ensure_csrf_cookie
 def welcome_page(request):
-    #checking if the user is already authorized:
     try:
         if request.user.is_authenticated:
-            return render(request, 'base.html')
+            return redirect('home')
+        
         if request.method == 'POST':
-            #mac_address = (':'.join(re.findall('..', '%012x' % uuid.getnode())))
-            mac_address = mac_address = '8c:aa:ce:51:67:e9'
-            user = authenticate(request,mac_address=mac_address)
+            mac_address = '8c:aa:ce:51:67:e9'  # Fixed MAC address for testing
+            user = authenticate(request, mac_address=mac_address)
+            
             if user is not None:
                 login(request, user)
-                # Redirect to the appropriate page
-                return render(request,'base.html')
-                    
+                return redirect('home')
             else:
-                # Handle invalid login
-                print("invalid mac-address")
-                return render(request, 'welcome_dashboard.html', {'error': 'Invalid MAC address. Consult DOTM '})
-            
-    #throw exception for user authentication        
+                return render(request, 'welcome_dashboard.html', {'error': 'Invalid MAC address. Consult DOTM'})
+                
     except Exception as e:
-        print(e)
-        # print('check')
+        print(f"Authentication error: {e}")
+        return render(request, 'welcome_dashboard.html', {'error': 'Authentication failed'})
 
     return render(request, 'welcome_dashboard.html')
 
-# Create your views here.
-def home (request):
+@ensure_csrf_cookie
+def home(request):
     try:
-        if request.user.is_authenticated:
-            Record_list= Record.objects.all()
-        return render (request,'base.html',{'Record_list':Record_list})
+        if not request.user.is_authenticated:
+            return redirect('welcome_page')
+            
+        Record_list = Record.objects.all()
+        return render(request, 'base.html', {'Record_list': Record_list})
 
     except Exception as e:
-        print(e)     
-
+        print(f"Home page error: {e}")
+        return redirect('welcome_page')
 
 def video(request):
+    if not request.user.is_authenticated:
+        return redirect('welcome_page')
     return StreamingHttpResponse(process_video(), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def Records(request):
-    Record_list= Record.objects.all()
+    if not request.user.is_authenticated:
+        return redirect('welcome_page')
+    Record_list = Record.objects.all()
     context = {
         'Record_list': Record_list
     }
     return render(request, 'Records.html', context)
-  
-    
+
 def download_csv(request):
+    if not request.user.is_authenticated:
+        return redirect('welcome_page')
     # Retrieve data from the database or any other source
     # records = Record.objects.all()  # Fetch records from the ViewRecord model
     license = request.GET.get('license')
@@ -102,6 +105,8 @@ from .serialization import RecordSerializer
 
 @api_view(['GET'])
 def get_records(request):
+    if not request.user.is_authenticated:
+        return redirect('welcome_page')
     records = Record.objects.all()
     serializer = RecordSerializer(records, many=True, context={'request': request})
     return Response(serializer.data)

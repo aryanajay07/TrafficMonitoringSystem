@@ -53,6 +53,158 @@ def calculate_speed(coordinates: deque, fps: int) -> float:
     speed = distance / time * 3.6  # Convert m/s to km/h
     return speed
 
+class VideoCamera:
+    def __init__(self):
+        try:
+            # Video path check
+            video_path = "speed_estimation/Test_video/Vehicle3.mp4"
+            print(f"Checking video path: {os.path.abspath(video_path)}")
+            if not os.path.exists(video_path):
+                raise FileNotFoundError(f"Video file not found: {video_path}")
+                
+            print("Opening video file...")
+            self.video = cv2.VideoCapture(video_path)
+            if not self.video.isOpened():
+                raise ValueError(f"Could not open video file: {video_path}")
+            
+            # Load YOLO model from project models directory
+            model_path = "models/yolov8n.pt"
+            print(f"Checking YOLO model path: {os.path.abspath(model_path)}")
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"YOLO model not found at {model_path}")
+            
+            print("Loading YOLO model...")
+            self.model = YOLO(model_path)
+            print("YOLO model loaded successfully")
+            
+            # Initialize other components
+            print("Initializing tracker and annotator...")
+            self.box_annotator = sv.BoxAnnotator(
+                thickness=2,
+                text_thickness=1,
+                text_scale=0.5
+            )
+            self.view_transformer = ViewTransformer(source=SOURCE, target=TARGET)
+            self.tracker_id_to_coordinates = defaultdict(lambda: deque(maxlen=30))
+            
+            # Get video properties
+            self.fps = int(self.video.get(cv2.CAP_PROP_FPS))
+            self.frame_width = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.frame_height = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.frame_count = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.frame_idx = 0
+            
+            print(f"Camera initialized successfully:")
+            print(f"- Video path: {os.path.abspath(video_path)}")
+            print(f"- Video properties: {self.frame_width}x{self.frame_height} @ {self.fps}fps")
+            print(f"- Total frames: {self.frame_count}")
+            print(f"- YOLO model: {os.path.abspath(model_path)}")
+            
+        except Exception as e:
+            print(f"Error initializing VideoCamera: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
+
+    def __del__(self):
+        if hasattr(self, 'video'):
+            self.video.release()
+
+    def get_frame(self):
+        try:
+            success, frame = self.video.read()
+            print(f"Frame {self.frame_idx}: Read success = {success}")
+            
+            if not success:
+                print(f"Failed to read frame {self.frame_idx}, resetting video")
+                self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                self.frame_idx = 0
+                success, frame = self.video.read()
+                if not success:
+                    print("Failed to read frame after reset")
+                    return None
+
+            # Ensure frame is not empty
+            if frame is None or frame.size == 0:
+                print(f"Empty frame received at index {self.frame_idx}")
+                return None
+
+            # Process frame with YOLO
+            print(f"Processing frame {self.frame_idx} with YOLO")
+            results = self.model(frame, imgsz=1280)[0]
+            
+            # Convert YOLO results to supervision Detections format
+            boxes = results.boxes
+            class_ids = boxes.cls.cpu().numpy().astype(int)
+            confidences = boxes.conf.cpu().numpy()
+            xyxy = boxes.xyxy.cpu().numpy()
+            
+            # Create detections object
+            detections = sv.Detections(
+                xyxy=xyxy,
+                confidence=confidences,
+                class_id=class_ids
+            )
+            
+            # Filter for cars (class_id 2)
+            detections = detections[detections.class_id == 2]
+            print(f"Detected {len(detections)} vehicles in frame {self.frame_idx}")
+
+            if len(detections) > 0:
+                # Process each detected vehicle
+                for i, bbox in enumerate(detections.xyxy):
+                    # Use detection index as tracker_id for now
+                    tracker_id = i
+                    
+                    # Get center bottom point
+                    x1, y1, x2, y2 = bbox
+                    point = np.array([[(x1 + x2) / 2, y2]])
+
+                    # Transform point
+                    transformed_point = self.view_transformer.transform_points(point)[0]
+                    self.tracker_id_to_coordinates[tracker_id].append(transformed_point[1])
+
+                    # Calculate speed
+                    speed = calculate_speed(self.tracker_id_to_coordinates[tracker_id], self.fps)
+                    print(f"Vehicle {tracker_id}: Speed = {speed:.1f} km/h")
+                    
+                    # Store speed for annotation
+                    detections.class_id[i] = int(speed)
+
+                # Draw detections
+                frame = self.box_annotator.annotate(
+                    scene=frame, 
+                    detections=detections,
+                    labels=[f"{speed} km/h" for speed in detections.class_id]
+                )
+
+            # Increment frame counter
+            self.frame_idx += 1
+
+            # Resize frame if too large
+            max_dimension = 1280
+            height, width = frame.shape[:2]
+            if width > max_dimension or height > max_dimension:
+                scale = max_dimension / max(width, height)
+                frame = cv2.resize(frame, None, fx=scale, fy=scale)
+                print(f"Resized frame to {int(width*scale)}x{int(height*scale)}")
+
+            # Convert frame to JPEG with quality parameter
+            encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), 85]
+            ret, buffer = cv2.imencode('.jpg', frame, encode_params)
+            if not ret:
+                print("Failed to encode frame to JPEG")
+                return None
+            
+            print(f"Successfully processed frame {self.frame_idx-1}")    
+            return buffer.tobytes()
+            
+        except Exception as e:
+            print(f"Error in get_frame: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+
 def process_video():
     source_video_path = "speed_estimation/Test_video/Vehicle3.mp4"
     target_folder = "./Result_video"
@@ -67,149 +219,118 @@ def process_video():
     # Construct the full path for the output video file
     target_video_path = os.path.join(target_folder, "output.mp4")
 
-    video_info = sv.VideoInfo.from_video_path(source_video_path)
+    # Initialize video info
+    cap = cv2.VideoCapture(source_video_path)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # Initialize YOLO model
     model = YOLO("models/Vehicle_Detection.pt")
 
-    byte_track = sv.ByteTrack(
-        frame_rate=video_info.fps, track_activation_threshold=0.7
+    # Initialize annotators
+    box_annotator = sv.BoxAnnotator(
+        thickness=2,
+        text_thickness=2,
+        text_scale=1
     )
 
-    thickness = sv.calculate_optimal_line_thickness(
-        resolution_wh=video_info.resolution_wh
-    )
-    text_scale = sv.calculate_optimal_text_scale(resolution_wh=video_info.resolution_wh)
-    bounding_box_annotator = sv.BoundingBoxAnnotator(thickness=thickness)
-    label_annotator = sv.LabelAnnotator(
-        text_scale=text_scale,
-        text_thickness=thickness,
-        text_position=sv.Position.BOTTOM_CENTER,
-    )
-    trace_annotator = sv.TraceAnnotator(
-        thickness=thickness,
-        trace_length=video_info.fps * 2,
-        position=sv.Position.BOTTOM_CENTER,
-    )
-
-    frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
-
-    polygon_zone = sv.PolygonZone(polygon=SOURCE)
+    # Initialize zone and transformer
+    polygon_zone = sv.PolygonZone(polygon=SOURCE, frame_resolution_wh=(width, height))
     view_transformer = ViewTransformer(source=SOURCE, target=TARGET)
 
-    coordinates = defaultdict(lambda: deque(maxlen=video_info.fps))
+    coordinates = defaultdict(lambda: deque(maxlen=fps))
     photo_captured = set()
     max_speeds = defaultdict(lambda: 0)  # Dictionary to store the maximum speed of each vehicle
 
-    for frame_idx, frame in enumerate(frame_generator):
-        result = model(frame)[0]
-        detections = sv.Detections.from_ultralytics(result)
-        detections = detections[detections.confidence > confidence_threshold]
-        detections = detections[polygon_zone.trigger(detections)]
-        detections = detections.with_nms(threshold=iou_threshold)
-        detections = byte_track.update_with_detections(detections=detections)
-
-        points = detections.get_anchors_coordinates(
-            anchor=sv.Position.BOTTOM_CENTER
-        )
-        points = view_transformer.transform_points(points=points).astype(int)
-
-        for tracker_id, [_, y] in zip(detections.tracker_id, points):
-            coordinates[tracker_id].append(y)
-
-        labels = []
-        for tracker_id in detections.tracker_id:
-            speed = calculate_speed(coordinates[tracker_id], video_info.fps)
-            max_speeds[tracker_id] = max(max_speeds[tracker_id], speed)  # Update maximum speed
-            if speed == 0.0:
-                labels.append(f"#{tracker_id}")
-            else:
-                labels.append(f"#{tracker_id} {int(speed)} km/h")
-                if speed > 10 and tracker_id not in photo_captured:
-                    vehicle_speed = max_speeds[tracker_id]
-                    vehicle_tracker_id = tracker_id
-                    photo_captured.add(tracker_id)
-                    vehicle_cropped = save_vehicle_photo(frame, detections, tracker_id, photo_folder, frame_idx)
-
-                    try:
-                        # Constructing the path to save a file in the media directory
-                        photo_filename = f"tracker_{tracker_id}_frame_{frame_idx}.jpg"
-                        photo_path = os.path.join(settings.MEDIA_ROOT, 'Vehicle_images', photo_filename)
-
-                        # Saving the file
-                        cv2.imwrite(photo_path, vehicle_cropped)
-                        print(photo_path)
-                        # Detect license plate and its number
-                        plates, plate_numbers = detect_license_plate_and_number(photo_path)
-
-                        if plates is None or plate_numbers is None:
-                            print("No license plates detected.")
-                        else:
-                            # Save the license plate image and number to the database
-                            for i, plate in enumerate(plates):
-                                license_plate_filename = f"tracker_{tracker_id}_frame_{frame_idx}_plate_{i}.jpg"
-                                license_plate_path = os.path.join(settings.MEDIA_ROOT, 'License_plate_images', license_plate_filename)
-                                cv2.imwrite(license_plate_path, plate)
-                                
-                                # Storing the record in the database
-                                new_data = Record(
-                                    stationID=Station.objects.get(mac_address=mac_address),
-                                    speed=vehicle_speed,
-                                    date=datetime.now().date(),
-                                    count=5,
-                                    vehicle_image=os.path.join('Vehicle_images', photo_filename),
-                                    license_plate_image=os.path.join('License_plate_images', license_plate_filename),
-                                    liscenseplate_no=plate_numbers[i] if plate_numbers else None
-                                )
-                                new_data.save() # Save
-                    except Station.DoesNotExist:
-                        print(f"Station with MAC address {mac_address} does not exist.")
-                    except Exception as e:
-                        print(f"Error saving Record: {e}")
-
-        annotated_frame = frame.copy()
-
-        # Ensure the number of labels matches the number of detections
-        if len(labels) == len(detections):
-            annotated_frame = label_annotator.annotate(
-                scene=annotated_frame, detections=detections, labels=labels
-            )
-        else:
-            print(f"Number of labels ({len(labels)}) does not match number of detections ({len(detections)})")
-
-        annotated_frame = bounding_box_annotator.annotate(
-            scene=annotated_frame, detections=detections
-        )
-
-        # Encode frame as JPEG
-        ret, jpeg = cv2.imencode('.jpg', annotated_frame)
+    frame_idx = 0
+    while True:
+        ret, frame = cap.read()
         if not ret:
-            continue
+            break
 
-        # Convert encoded JPEG frame to bytes
-        frame_bytes = jpeg.tobytes()
+        # Detect objects
+        results = model(frame, verbose=False)[0]
+        detections = sv.Detections.from_ultralytics(results)
+
+        # Process detections
+        for detection_idx in range(len(detections)):
+            tracker_id = detection_idx
+            
+            # Get detection coordinates
+            bbox = detections.xyxy[detection_idx]
+            x1, y1, x2, y2 = bbox
+            
+            # Calculate center point
+            center_x = (x1 + x2) / 2
+            center_y = y2  # Use bottom center point
+            center_point = np.array([[center_x, center_y]])
+            
+            # Transform point and calculate speed
+            transformed_point = view_transformer.transform_points(center_point)[0]
+            coordinates[tracker_id].append(transformed_point[1])
+            speed = calculate_speed(coordinates[tracker_id], fps)
+            
+            if speed > max_speeds[tracker_id]:
+                max_speeds[tracker_id] = speed
+
+            # Save photo and record if speed exceeds limit
+            if speed > 50 and tracker_id not in photo_captured:
+                photo_captured.add(tracker_id)
+                photo_path = save_vehicle_photo(frame, bbox, tracker_id, photo_folder, frame_idx)
+                
+                # Detect license plate from cropped vehicle image
+                vehicle_crop = frame[int(y1):int(y2), int(x1):int(x2)]
+                _, license_plate = detect_license_plate_and_number(vehicle_crop)
+                
+                # Save record to database
+                try:
+                    station = Station.objects.get(mac_address=mac_address)
+                    Record.objects.create(
+                        stationID=station,
+                        speed=int(speed),
+                        date=datetime.now().date(),
+                        count=1,
+                        liscenseplate_no=license_plate if license_plate else "Unknown",
+                        vehicle_image=photo_path
+                    )
+                except Exception as e:
+                    print(f"Error saving to database: {e}")
+
+        # Draw detections and annotations
+        labels = [
+            f"#{tracker_id} {max_speeds[tracker_id]:.1f} km/h"
+            for tracker_id in detections.tracker_id
+        ]
+        frame = box_annotator.annotate(
+            scene=frame, 
+            detections=detections,
+            labels=labels
+        )
+
+        # Convert frame to JPEG
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame_bytes = buffer.tobytes()
+        
+        # Yield frame for streaming
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n')
-    cv2.destroyAllWindows()
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
-def save_vehicle_photo(frame, detections, tracker_id, photo_folder, frame_idx):
-    best_y = float('inf')
-    best_detection = None
-    for detection in detections:
-        if detection[4] == tracker_id:
-            x1, y1, x2, y2 = detection[0][0], detection[0][1], detection[0][2], detection[0][3]
-            if y2 < best_y:
-                best_y = y2
-                best_detection = detection
+        frame_idx += 1
 
-    if best_detection is not None:
-        x1, y1, x2, y2 = best_detection[0][0], best_detection[0][1], best_detection[0][2], best_detection[0][3]
-        x1_int = np.around(x1).astype(int)
-        y1_int = np.around(y1).astype(int)
-        x2_int = np.around(x2).astype(int)
-        y2_int = np.around(y2).astype(int)
+    cap.release()
 
-        vehicle_crop = frame[y1_int:y2_int, x1_int:x2_int]
-        return vehicle_crop
+def save_vehicle_photo(frame, bbox, tracker_id, photo_folder, frame_idx):
+    x1, y1, x2, y2 = bbox
+    x1_int = np.around(x1).astype(int)
+    y1_int = np.around(y1).astype(int)
+    x2_int = np.around(x2).astype(int)
+    y2_int = np.around(y2).astype(int)
+
+    vehicle_crop = frame[y1_int:y2_int, x1_int:x2_int]
+    photo_path = os.path.join(photo_folder, f"tracker_{tracker_id}_frame_{frame_idx}.jpg")
+    cv2.imwrite(photo_path, vehicle_crop)
+    return photo_path
 
 if __name__ == "__main__":
     process_video()
-

@@ -1,68 +1,194 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Vehicle Live Camera</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Monitoring System</title>
     <link rel="stylesheet" href="../static/css/base.css" />
-  </head>
-  <body>
-    <div class="profile-bar">
-      <div class="content">Vehicle Live Camera</div>
-      <div class="profile-info">
-        <!-- Add profile information here -->
-      </div>
-    </div>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-traffic-light"></i>
+                <h1>Traffic Monitor</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-video"></i>
+                    <span>Live Feed</span>
+                </a>
+                <a href="/Records" class="nav-item">
+                    <i class="fas fa-table"></i>
+                    <span>Records</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </aside>
 
-    <div class="content">
-      {% if user.is_authenticated %}
-      <a href="home"></a>
-      {% endif %}
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <div class="location-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Station Location: Test Location</span>
+                </div>
+                <div class="actions">
+                    <button class="action-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <button class="action-btn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </header>
 
-      <div class="video-stream">
-        <img
-          id="video-stream"
-          src=""
-          alt="Video Stream"
-          style="width: 830px; height: 500px; left: 0px; top: 0px"
-        />
-      </div>
+            <div class="content-grid">
+                <!-- Video Stream Section -->
+                <section class="video-section">
+                    <div class="section-header">
+                        <h2>Live Video Feed</h2>
+                        <div class="stream-status">
+                            <span class="status-dot"></span>
+                            <span>Live</span>
+                        </div>
+                    </div>
+                    <div class="video-container">
+                        <div class="video-wrapper">
+                            <img id="video-stream" src="" alt="Video Stream">
+                            <div id="video-error" class="video-error" style="display: none;">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>Error loading video stream</span>
+                            </div>
+                            <div id="loading-indicator" class="loading-indicator">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Loading video stream...</span>
+                            </div>
+                        </div>
+                        <div class="video-overlay">
+                            <div class="stream-info">
+                                <div class="info-item">
+                                    <i class="fas fa-car"></i>
+                                    <span>Vehicles: <strong id="vehicle-count">0</strong></span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    <span>Speed: <strong id="current-speed">0</strong> km/h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-controls">
+                        <form method="post" class="control-form">
+                            {% csrf_token %}
+                            <button type="button" class="control-btn start-camera">
+                                <i class="fas fa-play"></i>
+                                <span>Start Stream</span>
+                            </button>
+                            <button type="button" class="control-btn stop-camera">
+                                <i class="fas fa-stop"></i>
+                                <span>Stop Stream</span>
+                            </button>
+                            <button type="button" class="control-btn settings-camera">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </button>
+                        </form>
+                    </div>
+                </section>
 
-      <div class="button-container">
-        <button class="start-camera" onclick="startCamera()">
-          Start Camera
-        </button>
-        <button class="stop-camera" onclick="stopCamera()">Stop Camera</button>
-        <a href="/Records">
-          <button class="view-records">View Records</button>
-        </a>
-      </div>
-
-      <div class="side-box">
-        <table id="myTable">
-          <thead>
-            <tr>
-              <th>SN</th>
-              <th>License Plate No</th>
-              <th>Speed</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Table content will be populated by JS -->
-          </tbody>
-        </table>
-      </div>
+                <!-- Records Section -->
+                <section class="records-section">
+                    <div class="section-header">
+                        <h2>Recent Records</h2>
+                        <div class="header-actions">
+                            <button class="filter-btn">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <form method="post" class="refresh-form">
+                                {% csrf_token %}
+                                <button type="submit" class="refresh-btn">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="records-table">
+                        <table id="myTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>License Plate</th>
+                                    <th>Speed</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table content will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <button class="view-all-btn">View All Records</button>
+                    </div>
+                </section>
+            </div>
+        </main>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-      function startCamera() {
-        document.getElementById("video-stream").src = "/video";
-      }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
 
-      function stopCamera() {
-        document.getElementById("video-stream").src = "";
-      }
+        // Toggle sidebar on mobile
+        document.querySelector('.menu-toggle').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
+
+        // Add CSRF token to all AJAX requests
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", getCookie("csrftoken"));
+                }
+            }
+        });
     </script>
     <script src="static/js/records_table.js"></script>
-  </body>
+    <script src="static/js/video_stream.js"></script>
+</body>
 </html>
