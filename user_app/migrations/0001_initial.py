@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ("speed", models.IntegerField()),
                 ("date", models.DateField()),
                 ("count", models.IntegerField()),
-                ("liscenseplate_no", models.CharField(max_length=50, null=True)),
+                ("licenseplate_no", models.CharField(max_length=50, null=True)),
                 (
                     "stationID",
                     models.ForeignKey(

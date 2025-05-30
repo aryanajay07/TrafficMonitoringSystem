@@ -7,6 +7,7 @@ urlpatterns = [
     path("",views.welcome_page, name="welcome"),
     path('download-csv/', views.download_csv, name='download_csv'),
     path("Home/",views.home,name="home"),
+    path('welcome/', views.welcome_page, name='welcome_page'), #was_missing
     path('video/', views.video, name='video'),
     path("Records/",views.Records,name="Records"),
     path('api/records/', views.get_records, name='get_records'),

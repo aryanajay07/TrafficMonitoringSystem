@@ -91,7 +91,7 @@ def download_csv(request):
     for record in filtered_records:
         writer.writerow([
             record.pk,
-            record.liscenseplate_no,
+            record.licenseplate_no,
             record.speed,
             record.date,
             record.count

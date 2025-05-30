@@ -2,6 +2,8 @@ let videoStream = null;
 let statsInterval = null;
 let retryCount = 0;
 const MAX_RETRIES = 3;
+let isManuallyStopped = false;
+
 
 // DOM Elements
 const videoElement = document.getElementById('video-stream');
@@ -27,7 +29,12 @@ function hideLoadingAndError() {
 }
 
 function handleVideoError(event) {
+
     console.error('Video stream error:', event);
+    if (isManuallyStopped) {
+        console.log('Video error ignored because camera was manually stopped.');
+        return;
+    }
     if (retryCount < MAX_RETRIES) {
         retryCount++;
         console.log(`Retrying video stream (${retryCount}/${MAX_RETRIES})...`);
@@ -47,19 +54,19 @@ function handleVideoLoad() {
 function startCamera() {
     if (!videoStream) {
         showLoading();
-        
+        isManuallyStopped = false; // reset flag on start   
         // Add timestamp to prevent caching
         const timestamp = new Date().getTime();
         if (videoElement) {
             videoElement.src = `/speed_estimation/video_feed/?t=${timestamp}`;
             videoStream = true;
         }
-        
+
         // Update UI
         if (startButton) startButton.disabled = true;
         if (stopButton) stopButton.disabled = false;
         if (statusDot) statusDot.style.backgroundColor = 'var(--success-color)';
-        
+
         // Start stats updates
         if (!statsInterval) {
             statsInterval = setInterval(updateStats, 2000);
@@ -69,49 +76,54 @@ function startCamera() {
 
 function stopCamera() {
     if (videoStream) {
-        if (videoElement) videoElement.src = '';
+        isManuallyStopped = true; // indicate manual stop
+        if (videoElement) {
+            videoElement.src = '';
+            videoElement.removeAttribute('src');
+            videoElement.load(); // Optional cleanup
+        }
         videoStream = false;
-        
+
         // Update UI
         if (startButton) startButton.disabled = false;
         if (stopButton) stopButton.disabled = true;
         if (statusDot) statusDot.style.backgroundColor = 'var(--danger-color)';
-        
+
         // Reset stats and clear interval
         const vehicleCount = document.getElementById('vehicle-count');
         const currentSpeed = document.getElementById('current-speed');
         if (vehicleCount) vehicleCount.textContent = '0';
         if (currentSpeed) currentSpeed.textContent = '0';
-        
+
         if (statsInterval) {
             clearInterval(statsInterval);
             statsInterval = null;
         }
-        
+
         hideLoadingAndError();
         retryCount = 0;
     }
 }
 
 // Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('Initializing video stream components...');
-    
+
     // Initialize button states
     if (stopButton) stopButton.disabled = true;
     if (statusDot) statusDot.style.backgroundColor = 'var(--danger-color)';
     hideLoadingAndError();
-    
+
     // Add event listeners
     if (videoElement) {
         videoElement.addEventListener('error', handleVideoError);
         videoElement.addEventListener('load', handleVideoLoad);
     }
-    
+
     if (startButton) {
         startButton.addEventListener('click', startCamera);
     }
-    
+
     if (stopButton) {
         stopButton.addEventListener('click', stopCamera);
     }
@@ -136,7 +148,7 @@ function getCookie(name) {
 // Update stats periodically
 async function updateStats() {
     if (!videoStream) return;
-    
+
     try {
         const response = await fetch('/speed_estimation/get_stats/', {
             method: 'POST',
@@ -147,16 +159,16 @@ async function updateStats() {
             },
             body: JSON.stringify({})
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         if (data.error) {
             throw new Error(data.error);
         }
-        
+
         const vehicleCount = document.getElementById('vehicle-count');
         const currentSpeed = document.getElementById('current-speed');
         if (vehicleCount) vehicleCount.textContent = data.vehicle_count;
